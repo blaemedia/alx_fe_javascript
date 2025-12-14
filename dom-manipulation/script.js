@@ -32,12 +32,8 @@ const quoteAuthor = document.getElementById('quoteAuthor');
 const quoteCategory = document.getElementById('quoteCategory');
 const newQuoteBtn = document.getElementById('newQuote');
 const categoryFilter = document.getElementById('categoryFilter');
-const newQuoteText = document.getElementById('newQuoteText');
-const newQuoteAuthor = document.getElementById('newQuoteAuthor');
-const newQuoteCategory = document.getElementById('newQuoteCategory');
-const newCategoryInput = document.getElementById('newCategoryInput');
-const addQuoteBtn = document.getElementById('addQuoteBtn');
-const formMessage = document.getElementById('formMessage');
+const addQuoteFormBtn = document.getElementById('addQuoteFormBtn');
+const addQuoteFormContainer = document.getElementById('addQuoteFormContainer');
 const deleteCategory = document.getElementById('deleteCategory');
 const deleteCategoryBtn = document.getElementById('deleteCategoryBtn');
 const addToFavoritesBtn = document.getElementById('addToFavorites');
@@ -144,50 +140,178 @@ function updateCategoryFilters() {
 // Update category dropdowns
 function updateCategoryDropdowns() {
     // Clear existing options except the first one
-    while (newQuoteCategory.options.length > 1) {
-        newQuoteCategory.remove(1);
-    }
-    
     while (deleteCategory.options.length > 1) {
         deleteCategory.remove(1);
     }
     
-    // Add categories to dropdowns
+    // Add categories to delete dropdown
     categories.forEach(category => {
-        // Add to new quote category dropdown
-        const option1 = document.createElement('option');
-        option1.value = category;
-        option1.textContent = category;
-        newQuoteCategory.appendChild(option1);
-        
-        // Add to delete category dropdown
-        const option2 = document.createElement('option');
-        option2.value = category;
-        option2.textContent = category;
-        deleteCategory.appendChild(option2);
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        deleteCategory.appendChild(option);
     });
+}
+
+// Create the add quote form dynamically
+function createAddQuoteForm() {
+    // Clear the form container
+    addQuoteFormContainer.innerHTML = '';
+    
+    // Create the form element
+    const form = document.createElement('form');
+    form.id = 'addQuoteForm';
+    form.style.marginTop = '20px';
+    
+    // Create quote text input
+    const quoteTextGroup = document.createElement('div');
+    quoteTextGroup.className = 'form-group';
+    
+    const quoteTextLabel = document.createElement('label');
+    quoteTextLabel.textContent = 'Quote Text';
+    quoteTextLabel.setAttribute('for', 'newQuoteText');
+    
+    const quoteTextInput = document.createElement('textarea');
+    quoteTextInput.id = 'newQuoteText';
+    quoteTextInput.placeholder = 'Enter a new quote';
+    quoteTextInput.required = true;
+    
+    quoteTextGroup.appendChild(quoteTextLabel);
+    quoteTextGroup.appendChild(quoteTextInput);
+    
+    // Create author input
+    const authorGroup = document.createElement('div');
+    authorGroup.className = 'form-group';
+    
+    const authorLabel = document.createElement('label');
+    authorLabel.textContent = 'Author (Optional)';
+    authorLabel.setAttribute('for', 'newQuoteAuthor');
+    
+    const authorInput = document.createElement('input');
+    authorInput.id = 'newQuoteAuthor';
+    authorInput.type = 'text';
+    authorInput.placeholder = 'Enter author name';
+    
+    authorGroup.appendChild(authorLabel);
+    authorGroup.appendChild(authorInput);
+    
+    // Create category selection
+    const categoryGroup = document.createElement('div');
+    categoryGroup.className = 'form-group';
+    
+    const categoryLabel = document.createElement('label');
+    categoryLabel.textContent = 'Category';
+    categoryLabel.setAttribute('for', 'newQuoteCategory');
+    
+    const categorySelect = document.createElement('select');
+    categorySelect.id = 'newQuoteCategory';
+    
+    // Create default option
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = 'Select a category';
+    categorySelect.appendChild(defaultOption);
+    
+    // Add category options
+    categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        categorySelect.appendChild(option);
+    });
+    
+    categoryGroup.appendChild(categoryLabel);
+    categoryGroup.appendChild(categorySelect);
+    
+    // Create new category input
+    const newCategoryGroup = document.createElement('div');
+    newCategoryGroup.className = 'form-group';
+    
+    const newCategoryLabel = document.createElement('label');
+    newCategoryLabel.textContent = 'Or Add New Category';
+    newCategoryLabel.setAttribute('for', 'newCategoryInput');
+    
+    const newCategoryInput = document.createElement('input');
+    newCategoryInput.id = 'newCategoryInput';
+    newCategoryInput.type = 'text';
+    newCategoryInput.placeholder = 'Enter new category name';
+    
+    newCategoryGroup.appendChild(newCategoryLabel);
+    newCategoryGroup.appendChild(newCategoryInput);
+    
+    // Create submit button
+    const submitButton = document.createElement('button');
+    submitButton.type = 'button'; // Use button type to prevent form submission
+    submitButton.textContent = 'Add Quote';
+    submitButton.id = 'addQuoteBtn';
+    
+    // Create message container
+    const messageDiv = document.createElement('div');
+    messageDiv.id = 'formMessage';
+    messageDiv.style.marginTop = '15px';
+    messageDiv.style.padding = '10px';
+    messageDiv.style.borderRadius = '5px';
+    messageDiv.style.display = 'none';
+    
+    // Assemble the form
+    form.appendChild(quoteTextGroup);
+    form.appendChild(authorGroup);
+    form.appendChild(categoryGroup);
+    form.appendChild(newCategoryGroup);
+    form.appendChild(submitButton);
+    form.appendChild(messageDiv);
+    
+    // Add the form to the container
+    addQuoteFormContainer.appendChild(form);
+    
+    // Add event listener to the submit button
+    submitButton.addEventListener('click', addQuote);
+    
+    // Add event listeners for Enter key
+    quoteTextInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && e.ctrlKey) {
+            addQuote();
+        }
+    });
+    
+    newCategoryInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            addQuote();
+        }
+    });
+    
+    // Show a success message
+    showFormMessage("Add quote form created! Fill in the details to add a new quote.", "success");
 }
 
 // Add a new quote
 function addQuote() {
-    const text = newQuoteText.value.trim();
-    const author = newQuoteAuthor.value.trim();
-    let category = newQuoteCategory.value;
+    // Get form elements
+    const newQuoteText = document.getElementById('newQuoteText');
+    const newQuoteAuthor = document.getElementById('newQuoteAuthor');
+    const newQuoteCategory = document.getElementById('newQuoteCategory');
+    const newCategoryInput = document.getElementById('newCategoryInput');
+    const formMessage = document.getElementById('formMessage');
+    
+    // Get values
+    const text = newQuoteText ? newQuoteText.value.trim() : '';
+    const author = newQuoteAuthor ? newQuoteAuthor.value.trim() : '';
+    let category = newQuoteCategory ? newQuoteCategory.value : '';
     
     // Check if user wants to add a new category
-    const newCategory = newCategoryInput.value.trim();
+    const newCategory = newCategoryInput ? newCategoryInput.value.trim() : '';
     if (newCategory) {
         category = newCategory;
     }
     
     // Validation
     if (!text) {
-        showFormMessage("Please enter a quote text.", "error");
+        showFormMessage("Please enter a quote text.", "error", formMessage);
         return;
     }
     
     if (!category) {
-        showFormMessage("Please select or enter a category.", "error");
+        showFormMessage("Please select or enter a category.", "error", formMessage);
         return;
     }
     
@@ -196,6 +320,25 @@ function addQuote() {
         categories.push(category);
         updateCategoryFilters();
         updateCategoryDropdowns();
+        
+        // Also update the category dropdown in the form if it exists
+        if (newQuoteCategory) {
+            // Clear existing options except the first one
+            while (newQuoteCategory.options.length > 1) {
+                newQuoteCategory.remove(1);
+            }
+            
+            // Add updated categories
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                newQuoteCategory.appendChild(option);
+            });
+            
+            // Select the newly added category
+            newQuoteCategory.value = category;
+        }
     }
     
     // Create new quote object
@@ -209,13 +352,13 @@ function addQuote() {
     quotes.push(newQuote);
     
     // Show success message
-    showFormMessage("Quote added successfully!", "success");
+    showFormMessage("Quote added successfully!", "success", formMessage);
     
     // Clear form fields
-    newQuoteText.value = "";
-    newQuoteAuthor.value = "";
-    newCategoryInput.value = "";
-    newQuoteCategory.value = "";
+    if (newQuoteText) newQuoteText.value = "";
+    if (newQuoteAuthor) newQuoteAuthor.value = "";
+    if (newCategoryInput) newCategoryInput.value = "";
+    if (newQuoteCategory) newQuoteCategory.value = "";
     
     // Update statistics
     updateStatistics();
@@ -227,16 +370,41 @@ function addQuote() {
 }
 
 // Show form message
-function showFormMessage(message, type) {
-    formMessage.textContent = message;
-    formMessage.style.display = "block";
-    formMessage.style.backgroundColor = type === "error" ? "#ffebee" : "#e8f5e9";
-    formMessage.style.color = type === "error" ? "#c62828" : "#2e7d32";
-    formMessage.style.border = type === "error" ? "1px solid #ffcdd2" : "1px solid #c8e6c9";
+function showFormMessage(message, type, formMessageElement = null) {
+    let messageDiv = formMessageElement;
+    
+    // If no specific form message element is provided, use the general one
+    if (!messageDiv) {
+        messageDiv = document.getElementById('formMessage');
+        
+        // If still not found, create one
+        if (!messageDiv) {
+            messageDiv = document.createElement('div');
+            messageDiv.id = 'formMessage';
+            messageDiv.style.marginTop = '15px';
+            messageDiv.style.padding = '10px';
+            messageDiv.style.borderRadius = '5px';
+            messageDiv.style.display = 'block';
+            
+            // Try to add it to the form or to the form container
+            const form = document.getElementById('addQuoteForm');
+            if (form) {
+                form.appendChild(messageDiv);
+            } else if (addQuoteFormContainer) {
+                addQuoteFormContainer.appendChild(messageDiv);
+            }
+        }
+    }
+    
+    messageDiv.textContent = message;
+    messageDiv.style.display = "block";
+    messageDiv.style.backgroundColor = type === "error" ? "#ffebee" : "#e8f5e9";
+    messageDiv.style.color = type === "error" ? "#c62828" : "#2e7d32";
+    messageDiv.style.border = type === "error" ? "1px solid #ffcdd2" : "1px solid #c8e6c9";
     
     // Hide message after 3 seconds
     setTimeout(() => {
-        formMessage.style.display = "none";
+        messageDiv.style.display = "none";
     }, 3000);
 }
 
@@ -389,8 +557,8 @@ function setupEventListeners() {
     // New quote button
     newQuoteBtn.addEventListener('click', showRandomQuote);
     
-    // Add quote button
-    addQuoteBtn.addEventListener('click', addQuote);
+    // Add quote form button
+    addQuoteFormBtn.addEventListener('click', createAddQuoteForm);
     
     // Delete category button
     deleteCategoryBtn.addEventListener('click', deleteCategoryFunc);
@@ -400,21 +568,9 @@ function setupEventListeners() {
     
     // Clear favorites button
     clearFavoritesBtn.addEventListener('click', clearFavorites);
-    
-    // Allow pressing Enter in the new category field to add a quote
-    newCategoryInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            addQuote();
-        }
-    });
-    
-    // Allow pressing Enter in the quote text field to add a quote
-    newQuoteText.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter' && e.ctrlKey) {
-            addQuote();
-        }
-    });
 }
 
+window.createAddQuoteForm = createAddQuoteForm;
+window.addQuote = addQuote;
 // Initialize the app when the DOM is fully loaded
-document.addEventListener('DOMContentLoaded', init); 
+document.addEventListener('DOMContentLoaded', init);
