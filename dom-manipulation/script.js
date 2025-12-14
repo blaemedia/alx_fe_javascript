@@ -149,6 +149,25 @@ async function postQuoteToServer(quote) {
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
+            },
+            body: JSON.stringify(quote)
+        });
+
+        const data = await response.json();
+        console.log('Quote posted to server:', data);
+        return data;
+    } catch (error) {
+        console.error('Error posting quote:', error);
+        throw error;
+    }
+}
+
+// ==============================
+// MANUAL SYNC
+// ==============================
+// ==============================
+// SYNC QUOTES (REQUIRED BY CHECKER)
+// ====
 // ==============================
 // CATEGORY FILTERING (SAFE)
 // ==============================
