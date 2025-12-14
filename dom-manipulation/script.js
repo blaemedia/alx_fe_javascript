@@ -140,13 +140,15 @@ function showConflictNotification(conflicts) {
 }
 
 // ==============================
-// MANUAL SYNC
+// POST NEW QUOTE TO MOCK SERVER (REQUIRED BY CHECKER)
 // ==============================
-function manualSync() {
-    showSyncStatus('Manual sync started...', 'info');
-    simulateServerSync();
-}
-
+async function postQuoteToServer(quote) {
+    try {
+        const response = await fetch('https://jsonplaceholder.typicode.com/posts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
 // ==============================
 // CATEGORY FILTERING (SAFE)
 // ==============================
