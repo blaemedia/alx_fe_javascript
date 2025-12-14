@@ -1,4 +1,339 @@
 // ==============================
+// SERVER SIMULATION & DATA SYNCING
+// ==============================
+
+// Mock server URL (using JSONPlaceholder for simulation)
+const MOCK_SERVER_URL = 'https://jsonplaceholder.typicode.com/posts';
+const SYNC_INTERVAL = 30000; // Sync every 30 seconds
+const LAST_SYNC_KEY = 'lastQuoteSync';
+const SERVER_QUOTES_KEY = 'serverQuotesBackup';
+let syncIntervalId = null;
+
+// Simulated server quotes (in real app, this would come from API)
+let serverQuotes = [];
+
+// Initialize server simulation
+function initServerSimulation() {
+    console.log('Initializing server simulation...');
+    
+    // Load server quotes from localStorage if available
+    const savedServerQuotes = localStorage.getItem(SERVER_QUOTES_KEY);
+    if (savedServerQuotes) {
+        try {
+            serverQuotes = JSON.parse(savedServerQuotes);
+            console.log(`Loaded ${serverQuotes.length} server quotes from backup`);
+        } catch (error) {
+            console.error('Error loading server quotes:', error);
+        }
+    }
+    
+    // Start periodic syncing
+    startSyncInterval();
+    
+    // Perform initial sync
+    simulateServerSync();
+}
+
+// Start periodic sync interval
+function startSyncInterval() {
+    if (syncIntervalId) {
+        clearInterval(syncIntervalId);
+    }
+    
+    syncIntervalId = setInterval(() => {
+        simulateServerSync();
+    }, SYNC_INTERVAL);
+    
+    console.log(`Sync interval started (${SYNC_INTERVAL / 1000} seconds)`);
+}
+
+// Stop sync interval (for testing or when app closes)
+function stopSyncInterval() {
+    if (syncIntervalId) {
+        clearInterval(syncIntervalId);
+        syncIntervalId = null;
+        console.log('Sync interval stopped');
+    }
+}
+
+// Simulate server sync operation
+async function simulateServerSync() {
+    try {
+        console.log('Starting server sync simulation...');
+        
+        // Show sync status
+        showSyncStatus('Syncing with server...', 'info');
+        
+        // In a real app, this would be a fetch() call to the server
+        // For simulation, we'll use a mock server response
+        const serverResponse = await simulateServerRequest();
+        
+        // Process server response
+        await processServerResponse(serverResponse);
+        
+        // Update last sync time
+        const now = new Date().toISOString();
+        localStorage.setItem(LAST_SYNC_KEY, now);
+        
+        console.log('Server sync completed successfully');
+        
+    } catch (error) {
+        console.error('Server sync failed:', error);
+        showSyncStatus('Sync failed: ' + error.message, 'error');
+    }
+}
+
+// Simulate server request
+async function simulateServerRequest() {
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Return mock server data
+    return {
+        success: true,
+        timestamp: new Date().toISOString(),
+        quotes: serverQuotes,
+        message: 'Sync successful'
+    };
+}
+
+// Process server response
+async function processServerResponse(response) {
+    if (!response.success) {
+        throw new Error('Server response indicated failure');
+    }
+    
+    const serverData = response.quotes || [];
+    let conflictsResolved = 0;
+    let newQuotesAdded = 0;
+    let conflictsFound = [];
+    
+    // Compare server quotes with local quotes
+    serverData.forEach(serverQuote => {
+        // Find matching local quote by text and author
+        const localIndex = quotes.findIndex(localQuote => 
+            localQuote.text === serverQuote.text && 
+            localQuote.author === serverQuote.author
+        );
+        
+        if (localIndex === -1) {
+            // Quote doesn't exist locally, add it
+            quotes.push(serverQuote);
+            newQuotesAdded++;
+            
+            // Add category if new
+            if (!categories.includes(serverQuote.category)) {
+                categories.push(serverQuote.category);
+            }
+        } else {
+            // Quote exists, check for conflicts
+            const localQuote = quotes[localIndex];
+            const hasConflict = localQuote.category !== serverQuote.category;
+            
+            if (hasConflict) {
+                conflictsFound.push({
+                    local: localQuote,
+                    server: serverQuote,
+                    index: localIndex
+                });
+                
+                // Apply conflict resolution: server data takes precedence
+                quotes[localIndex] = serverQuote;
+                conflictsResolved++;
+            }
+        }
+    });
+    
+    // Save updated data to localStorage
+    saveToLocalStorage();
+    
+    // Update UI
+    populateCategories();
+    updateCategoryDropdowns();
+    updateStatistics();
+    
+    // Show sync results
+    let statusMessage = `Sync completed. Added ${newQuotesAdded} new quotes.`;
+    if (conflictsResolved > 0) {
+        statusMessage += ` Resolved ${conflictsResolved} conflicts.`;
+        showConflictNotification(conflictsFound);
+    }
+    
+    showSyncStatus(statusMessage, 'success');
+    
+    // Update display if needed
+    if (newQuotesAdded > 0 || conflictsResolved > 0) {
+        displayRandomQuote();
+    }
+    
+    // Save server quotes backup
+    localStorage.setItem(SERVER_QUOTES_KEY, JSON.stringify(serverData));
+}
+
+// Show sync status
+function showSyncStatus(message, type = 'info') {
+    const statusElement = document.getElementById('syncStatus') || createSyncStatusElement();
+    
+    statusElement.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+    statusElement.className = `sync-status sync-${type}`;
+    
+    // Auto-hide success messages after 5 seconds
+    if (type === 'success') {
+        setTimeout(() => {
+            if (statusElement.textContent.includes(message)) {
+                statusElement.textContent = '';
+                statusElement.className = 'sync-status';
+            }
+        }, 5000);
+    }
+}
+
+// Create sync status element if it doesn't exist
+function createSyncStatusElement() {
+    const statusElement = document.createElement('div');
+    statusElement.id = 'syncStatus';
+    statusElement.className = 'sync-status';
+    
+    // Add to page
+    const container = document.querySelector('.sync-container') || document.body;
+    container.appendChild(statusElement);
+    
+    return statusElement;
+}
+
+// Show conflict notification
+function showConflictNotification(conflicts) {
+    const notification = document.createElement('div');
+    notification.className = 'conflict-notification';
+    notification.innerHTML = `
+        <div class="conflict-header">
+            <h3>Data Conflicts Detected</h3>
+            <button class="close-btn">&times;</button>
+        </div>
+        <div class="conflict-body">
+            <p>${conflicts.length} conflict(s) were found and automatically resolved.</p>
+            <div class="conflict-list">
+                ${conflicts.map((conflict, index) => `
+                    <div class="conflict-item">
+                        <p><strong>Quote:</strong> "${conflict.local.text}"</p>
+                        <p><strong>Local Category:</strong> ${conflict.local.category}</p>
+                        <p><strong>Server Category:</strong> ${conflict.server.category}</p>
+                        <p><em>Using server category (${conflict.server.category})</em></p>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="conflict-actions">
+                <button class="btn" onclick="showConflictResolver(${JSON.stringify(conflicts)})">
+                    Review Conflicts
+                </button>
+                <button class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
+                    Dismiss
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Add close button functionality
+    notification.querySelector('.close-btn').addEventListener('click', () => {
+        notification.remove();
+    });
+    
+    // Add to page
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+        if (document.body.contains(notification)) {
+            notification.remove();
+        }
+    }, 10000);
+}
+
+// Manual conflict resolver
+function showConflictResolver(conflicts) {
+    const resolver = document.createElement('div');
+    resolver.className = 'conflict-resolver-modal';
+    resolver.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Resolve Data Conflicts</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Review and resolve conflicts between local and server data:</p>
+                <div class="conflict-resolver-list">
+                    ${conflicts.map((conflict, index) => `
+                        <div class="conflict-resolver-item" data-index="${index}">
+                            <h4>Conflict ${index + 1}</h4>
+                            <p><strong>Quote:</strong> "${conflict.local.text}"</p>
+                            <p><strong>Author:</strong> ${conflict.local.author}</p>
+                            <div class="conflict-option">
+                                <input type="radio" name="conflict-${index}" value="local" id="local-${index}">
+                                <label for="local-${index}">
+                                    <strong>Local Version:</strong> Category - ${conflict.local.category}
+                                </label>
+                            </div>
+                            <div class="conflict-option">
+                                <input type="radio" name="conflict-${index}" value="server" id="server-${index}" checked>
+                                <label for="server-${index}">
+                                    <strong>Server Version:</strong> Category - ${conflict.server.category}
+                                </label>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="applyConflictResolution()">Apply Resolution</button>
+                <button class="btn btn-secondary" onclick="document.querySelector('.conflict-resolver-modal').remove()">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Add close button functionality
+    resolver.querySelector('.close-btn').addEventListener('click', () => {
+        resolver.remove();
+    });
+    
+    // Add to page
+    document.body.appendChild(resolver);
+}
+
+// Apply manual conflict resolution
+function applyConflictResolution() {
+    const resolverItems = document.querySelectorAll('.conflict-resolver-item');
+    let changesMade = false;
+    
+    resolverItems.forEach(item => {
+        const index = parseInt(item.dataset.index);
+        const localChoice = item.querySelector('input[value="local"]').checked;
+        
+        if (localChoice) {
+            // User chose to keep local version
+            // Note: In this simulation, we don't update the server
+            // In a real app, you would send the local version back to the server
+            console.log(`User chose to keep local version for conflict ${index}`);
+            changesMade = true;
+        }
+    });
+    
+    if (changesMade) {
+        showSyncStatus('Conflict resolution applied. Local changes saved.', 'success');
+    }
+    
+    // Remove the resolver
+    document.querySelector('.conflict-resolver-modal').remove();
+}
+
+// Manually trigger sync
+function manualSync() {
+    showSyncStatus('Manual sync initiated...', 'info');
+    simulateServerSync();
+}
+
+// ==============================
 // JSON IMPORT/EXPORT FUNCTIONS
 // ==============================
 
@@ -16,7 +351,8 @@ function exportToJsonFile() {
             categories: categories,
             exportDate: new Date().toISOString(),
             totalQuotes: quotes.length,
-            totalCategories: categories.length
+            totalCategories: categories.length,
+            lastSync: localStorage.getItem(LAST_SYNC_KEY) || 'Never'
         };
         
         // Convert to JSON string with proper formatting
@@ -123,6 +459,11 @@ function importFromJsonFile(event) {
             populateCategories();
             updateCategoryDropdowns();
             updateStatistics();
+            
+            // Trigger sync after import
+            setTimeout(() => {
+                simulateServerSync();
+            }, 2000);
             
             // Show success message
             showDataMessage(`Successfully imported ${validQuotes.length} quotes! Total quotes: ${quotes.length}`, "success");
@@ -480,38 +821,28 @@ function setupEventListeners() {
     if (categoryFilter) {
         categoryFilter.addEventListener('change', filterQuotes);
     }
-}
-
-// Initialize categories when the app starts
-function initCategories() {
-    // Load categories from localStorage if available
-    const savedCategories = localStorage.getItem('quoteCategories');
-    if (savedCategories) {
-        try {
-            const parsedCategories = JSON.parse(savedCategories);
-            if (Array.isArray(parsedCategories)) {
-                // Merge with existing categories, avoiding duplicates
-                parsedCategories.forEach(category => {
-                    if (!categories.includes(category)) {
-                        categories.push(category);
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Error loading categories from localStorage:', error);
-        }
-    }
     
-    // Populate the category filter dropdown
-    populateCategories();
+    // Manual sync button (if exists)
+    const manualSyncBtn = document.getElementById('manualSyncBtn');
+    if (manualSyncBtn) {
+        manualSyncBtn.addEventListener('click', manualSync);
+    }
 }
 
-// Update the init function to include category initialization
+// Initialize server simulation when the app starts
+function initServer() {
+    initServerSimulation();
+}
+
+// Update the init function to include server initialization
 function init() {
     // ... existing initialization code ...
     
     // Initialize categories and filtering system
-    initCategories();
+    populateCategories();
+    
+    // Initialize server simulation and data syncing
+    initServer();
     
     // ... rest of existing initialization code ...
 }
@@ -522,6 +853,9 @@ window.addQuote = addQuote;
 window.filterQuotes = filterQuotes;
 window.populateCategories = populateCategories;
 window.displayRandomQuote = displayRandomQuote;
+window.manualSync = manualSync;
+window.applyConflictResolution = applyConflictResolution;
+window.showConflictResolver = showConflictResolver;
 
 // Initialize the app when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', init);
