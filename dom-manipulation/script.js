@@ -1,28 +1,14 @@
-// Quote data structure
-let quotes = [
-    { text: "The only way to do great work is to love what you do.", author: "Steve Jobs", category: "Motivation" },
-    { text: "Life is what happens to you while you're busy making other plans.", author: "John Lennon", category: "Life" },
-    { text: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt", category: "Inspiration" },
-    { text: "It is during our darkest moments that we must focus to see the light.", author: "Aristotle", category: "Wisdom" },
-    { text: "Whoever is happy will make others happy too.", author: "Anne Frank", category: "Happiness" },
-    { text: "You must be the change you wish to see in the world.", author: "Mahatma Gandhi", category: "Change" },
-    { text: "Spread love everywhere you go. Let no one ever come to you without leaving happier.", author: "Mother Teresa", category: "Love" },
-    { text: "The only thing we have to fear is fear itself.", author: "Franklin D. Roosevelt", category: "Courage" },
-    { text: "Do not go where the path may lead, go instead where there is no path and leave a trail.", author: "Ralph Waldo Emerson", category: "Inspiration" },
-    { text: "Be yourself; everyone else is already taken.", author: "Oscar Wilde", category: "Individuality" }
-];
-
-// Categories array
-let categories = ["Motivation", "Life", "Inspiration", "Wisdom", "Happiness", "Change", "Love", "Courage", "Individuality"];
-
-// Favorites array
+// Quote data structure - loaded from local storage
+let quotes = [];
+let categories = [];
 let favorites = [];
 
-// Statistics
-let stats = {
-    totalQuotes: 0,
-    totalCategories: 0,
-    quotesShown: 0
+// Session data
+let sessionData = {
+    quotesViewed: 0,
+    lastViewedQuote: null,
+    sessionStartTime: null,
+    currentFilter: "All"
 };
 
 // DOM Elements
@@ -42,12 +28,23 @@ const favoritesList = document.getElementById('favoritesList');
 const totalQuotesEl = document.getElementById('totalQuotes');
 const totalCategoriesEl = document.getElementById('totalCategories');
 const quotesShownEl = document.getElementById('quotesShown');
-
-// Current filter
-let currentFilter = "All";
+const sessionQuotesEl = document.getElementById('sessionQuotes');
+const lastViewedQuoteEl = document.getElementById('lastViewedQuote');
+const sessionStartTimeEl = document.getElementById('sessionStartTime');
+const exportQuotesBtn = document.getElementById('exportQuotesBtn');
+const importFile = document.getElementById('importFile');
+const clearAllQuotesBtn = document.getElementById('clearAllQuotesBtn');
+const loadSampleQuotesBtn = document.getElementById('loadSampleQuotesBtn');
+const dataMessage = document.getElementById('dataMessage');
 
 // Initialize the application
 function init() {
+    // Load data from local storage
+    loadFromLocalStorage();
+    
+    // Initialize session storage
+    initSessionStorage();
+    
     // Display first quote
     showRandomQuote();
     
@@ -60,15 +57,158 @@ function init() {
     // Update statistics
     updateStatistics();
     
-    // Load favorites from localStorage if available
-    loadFavorites();
-    
     // Display favorites
     displayFavorites();
     
     // Set up event listeners
     setupEventListeners();
+    
+    // Update session info display
+    updateSessionInfo();
 }
+
+// ==============================
+// LOCAL STORAGE FUNCTIONS
+// ==============================
+
+// Save quotes and categories to local storage
+function saveToLocalStorage() {
+    try {
+        localStorage.setItem('quoteGenerator_quotes', JSON.stringify(quotes));
+        localStorage.setItem('quoteGenerator_categories', JSON.stringify(categories));
+        localStorage.setItem('quoteGenerator_favorites', JSON.stringify(favorites));
+        console.log('Data saved to local storage');
+    } catch (error) {
+        console.error('Error saving to local storage:', error);
+        showDataMessage('Error saving data to local storage. Quotes may not persist.', 'error');
+    }
+}
+
+// Load quotes and categories from local storage
+function loadFromLocalStorage() {
+    try {
+        // Load quotes
+        const savedQuotes = localStorage.getItem('quoteGenerator_quotes');
+        if (savedQuotes && savedQuotes !== 'undefined') {
+            quotes = JSON.parse(savedQuotes);
+        } else {
+            // Load default quotes if none saved
+            quotes = getDefaultQuotes();
+            saveToLocalStorage();
+        }
+        
+        // Load categories
+        const savedCategories = localStorage.getItem('quoteGenerator_categories');
+        if (savedCategories && savedCategories !== 'undefined') {
+            categories = JSON.parse(savedCategories);
+        } else {
+            // Extract categories from quotes
+            categories = [...new Set(quotes.map(quote => quote.category))];
+            saveToLocalStorage();
+        }
+        
+        // Load favorites
+        const savedFavorites = localStorage.getItem('quoteGenerator_favorites');
+        if (savedFavorites && savedFavorites !== 'undefined') {
+            favorites = JSON.parse(savedFavorites);
+        }
+        
+        console.log('Data loaded from local storage');
+        showDataMessage('Data loaded from local storage', 'success');
+    } catch (error) {
+        console.error('Error loading from local storage:', error);
+        quotes = getDefaultQuotes();
+        categories = [...new Set(quotes.map(quote => quote.category))];
+        favorites = [];
+        showDataMessage('Error loading saved data. Using default quotes.', 'error');
+    }
+}
+
+// Get default quotes if no local storage data exists
+function getDefaultQuotes() {
+    return [
+        { text: "The only way to do great work is to love what you do.", author: "Steve Jobs", category: "Motivation" },
+        { text: "Life is what happens to you while you're busy making other plans.", author: "John Lennon", category: "Life" },
+        { text: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt", category: "Inspiration" },
+        { text: "It is during our darkest moments that we must focus to see the light.", author: "Aristotle", category: "Wisdom" },
+        { text: "Whoever is happy will make others happy too.", author: "Anne Frank", category: "Happiness" },
+        { text: "You must be the change you wish to see in the world.", author: "Mahatma Gandhi", category: "Change" },
+        { text: "Spread love everywhere you go. Let no one ever come to you without leaving happier.", author: "Mother Teresa", category: "Love" },
+        { text: "The only thing we have to fear is fear itself.", author: "Franklin D. Roosevelt", category: "Courage" },
+        { text: "Do not go where the path may lead, go instead where there is no path and leave a trail.", author: "Ralph Waldo Emerson", category: "Inspiration" },
+        { text: "Be yourself; everyone else is already taken.", author: "Oscar Wilde", category: "Individuality" }
+    ];
+}
+
+// ==============================
+// SESSION STORAGE FUNCTIONS
+// ==============================
+
+// Initialize session storage
+function initSessionStorage() {
+    try {
+        // Load session data from session storage
+        const savedSessionData = sessionStorage.getItem('quoteGenerator_session');
+        if (savedSessionData && savedSessionData !== 'undefined') {
+            sessionData = JSON.parse(savedSessionData);
+        } else {
+            // Initialize new session
+            sessionData = {
+                quotesViewed: 0,
+                lastViewedQuote: null,
+                sessionStartTime: new Date().toISOString(),
+                currentFilter: "All"
+            };
+        }
+        
+        // Update current filter from session data
+        if (sessionData.currentFilter) {
+            currentFilter = sessionData.currentFilter;
+        }
+        
+        console.log('Session data loaded');
+    } catch (error) {
+        console.error('Error loading session data:', error);
+        // Initialize fresh session data
+        sessionData = {
+            quotesViewed: 0,
+            lastViewedQuote: null,
+            sessionStartTime: new Date().toISOString(),
+            currentFilter: "All"
+        };
+    }
+}
+
+// Save session data to session storage
+function saveSessionToStorage() {
+    try {
+        sessionStorage.setItem('quoteGenerator_session', JSON.stringify(sessionData));
+    } catch (error) {
+        console.error('Error saving session data:', error);
+    }
+}
+
+// Update session info display
+function updateSessionInfo() {
+    if (sessionData.lastViewedQuote) {
+        const shortQuote = sessionData.lastViewedQuote.text.length > 50 
+            ? sessionData.lastViewedQuote.text.substring(0, 50) + '...' 
+            : sessionData.lastViewedQuote.text;
+        lastViewedQuoteEl.textContent = `Last viewed quote: "${shortQuote}"`;
+    }
+    
+    if (sessionData.sessionStartTime) {
+        const startTime = new Date(sessionData.sessionStartTime);
+        const formattedTime = startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        sessionStartTimeEl.textContent = `Session started: ${formattedTime}`;
+    }
+    
+    sessionQuotesEl.textContent = sessionData.quotesViewed;
+}
+
+// ==============================
+// CORE APPLICATION FUNCTIONS
+// ==============================
 
 // Show a random quote
 function showRandomQuote() {
@@ -102,9 +242,14 @@ function showRandomQuote() {
     
     quoteCategory.textContent = randomQuote.category;
     
+    // Update session data
+    sessionData.quotesViewed++;
+    sessionData.lastViewedQuote = randomQuote;
+    saveSessionToStorage();
+    
     // Update statistics
-    stats.quotesShown++;
     updateStatistics();
+    updateSessionInfo();
 }
 
 // Update category filters in the UI
@@ -118,6 +263,8 @@ function updateCategoryFilters() {
     allButton.className = `category-btn ${currentFilter === "All" ? "active" : ""}`;
     allButton.addEventListener('click', () => {
         currentFilter = "All";
+        sessionData.currentFilter = "All";
+        saveSessionToStorage();
         updateCategoryFilters();
         showRandomQuote();
     });
@@ -130,6 +277,8 @@ function updateCategoryFilters() {
         button.className = `category-btn ${currentFilter === category ? "active" : ""}`;
         button.addEventListener('click', () => {
             currentFilter = category;
+            sessionData.currentFilter = category;
+            saveSessionToStorage();
             updateCategoryFilters();
             showRandomQuote();
         });
@@ -241,7 +390,7 @@ function createAddQuoteForm() {
     
     // Create submit button
     const submitButton = document.createElement('button');
-    submitButton.type = 'button'; // Use button type to prevent form submission
+    submitButton.type = 'button';
     submitButton.textContent = 'Add Quote';
     submitButton.id = 'addQuoteBtn';
     
@@ -266,19 +415,6 @@ function createAddQuoteForm() {
     
     // Add event listener to the submit button
     submitButton.addEventListener('click', addQuote);
-    
-    // Add event listeners for Enter key
-    quoteTextInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter' && e.ctrlKey) {
-            addQuote();
-        }
-    });
-    
-    newCategoryInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            addQuote();
-        }
-    });
     
     // Show a success message
     showFormMessage("Add quote form created! Fill in the details to add a new quote.", "success");
@@ -320,25 +456,6 @@ function addQuote() {
         categories.push(category);
         updateCategoryFilters();
         updateCategoryDropdowns();
-        
-        // Also update the category dropdown in the form if it exists
-        if (newQuoteCategory) {
-            // Clear existing options except the first one
-            while (newQuoteCategory.options.length > 1) {
-                newQuoteCategory.remove(1);
-            }
-            
-            // Add updated categories
-            categories.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat;
-                option.textContent = cat;
-                newQuoteCategory.appendChild(option);
-            });
-            
-            // Select the newly added category
-            newQuoteCategory.value = category;
-        }
     }
     
     // Create new quote object
@@ -351,8 +468,11 @@ function addQuote() {
     // Add to quotes array
     quotes.push(newQuote);
     
+    // Save to local storage
+    saveToLocalStorage();
+    
     // Show success message
-    showFormMessage("Quote added successfully!", "success", formMessage);
+    showFormMessage("Quote added successfully! Saved to local storage.", "success", formMessage);
     
     // Clear form fields
     if (newQuoteText) newQuoteText.value = "";
@@ -373,11 +493,9 @@ function addQuote() {
 function showFormMessage(message, type, formMessageElement = null) {
     let messageDiv = formMessageElement;
     
-    // If no specific form message element is provided, use the general one
     if (!messageDiv) {
         messageDiv = document.getElementById('formMessage');
         
-        // If still not found, create one
         if (!messageDiv) {
             messageDiv = document.createElement('div');
             messageDiv.id = 'formMessage';
@@ -386,7 +504,6 @@ function showFormMessage(message, type, formMessageElement = null) {
             messageDiv.style.borderRadius = '5px';
             messageDiv.style.display = 'block';
             
-            // Try to add it to the form or to the form container
             const form = document.getElementById('addQuoteForm');
             if (form) {
                 form.appendChild(messageDiv);
@@ -402,10 +519,22 @@ function showFormMessage(message, type, formMessageElement = null) {
     messageDiv.style.color = type === "error" ? "#c62828" : "#2e7d32";
     messageDiv.style.border = type === "error" ? "1px solid #ffcdd2" : "1px solid #c8e6c9";
     
-    // Hide message after 3 seconds
     setTimeout(() => {
         messageDiv.style.display = "none";
     }, 3000);
+}
+
+// Show data message
+function showDataMessage(message, type) {
+    dataMessage.textContent = message;
+    dataMessage.style.display = "block";
+    dataMessage.style.backgroundColor = type === "error" ? "#ffebee" : "#e8f5e9";
+    dataMessage.style.color = type === "error" ? "#c62828" : "#2e7d32";
+    dataMessage.style.border = type === "error" ? "1px solid #ffcdd2" : "1px solid #c8e6c9";
+    
+    setTimeout(() => {
+        dataMessage.style.display = "none";
+    }, 4000);
 }
 
 // Delete a category
@@ -413,7 +542,7 @@ function deleteCategoryFunc() {
     const categoryToDelete = deleteCategory.value;
     
     if (!categoryToDelete) {
-        showFormMessage("Please select a category to delete.", "error");
+        showDataMessage("Please select a category to delete.", "error");
         return;
     }
     
@@ -428,6 +557,9 @@ function deleteCategoryFunc() {
     // Remove quotes with this category
     quotes = quotes.filter(quote => quote.category !== categoryToDelete);
     
+    // Save to local storage
+    saveToLocalStorage();
+    
     // Update UI
     updateCategoryFilters();
     updateCategoryDropdowns();
@@ -435,6 +567,8 @@ function deleteCategoryFunc() {
     // Reset current filter if it was the deleted category
     if (currentFilter === categoryToDelete) {
         currentFilter = "All";
+        sessionData.currentFilter = "All";
+        saveSessionToStorage();
         updateCategoryFilters();
     }
     
@@ -447,18 +581,19 @@ function deleteCategoryFunc() {
     // Reset delete dropdown
     deleteCategory.value = "";
     
-    showFormMessage(`Category "${categoryToDelete}" deleted successfully.`, "success");
+    showDataMessage(`Category "${categoryToDelete}" deleted successfully.`, "success");
 }
 
 // Update statistics
 function updateStatistics() {
-    stats.totalQuotes = quotes.length;
-    stats.totalCategories = categories.length;
-    
-    totalQuotesEl.textContent = stats.totalQuotes;
-    totalCategoriesEl.textContent = stats.totalCategories;
-    quotesShownEl.textContent = stats.quotesShown;
+    totalQuotesEl.textContent = quotes.length;
+    totalCategoriesEl.textContent = categories.length;
+    quotesShownEl.textContent = sessionData.quotesViewed;
 }
+
+// ==============================
+// FAVORITES FUNCTIONS
+// ==============================
 
 // Add current quote to favorites
 function addToFavorites() {
@@ -466,7 +601,7 @@ function addToFavorites() {
     
     // Check if quote is already in favorites
     if (favorites.some(fav => fav.text === currentQuoteText)) {
-        showFormMessage("This quote is already in your favorites!", "error");
+        showDataMessage("This quote is already in your favorites!", "error");
         return;
     }
     
@@ -481,32 +616,32 @@ function addToFavorites() {
         category: currentCategory
     });
     
-    // Save to localStorage
-    saveFavorites();
+    // Save to local storage
+    saveToLocalStorage();
     
     // Update favorites display
     displayFavorites();
     
-    showFormMessage("Quote added to favorites!", "success");
+    showDataMessage("Quote added to favorites!", "success");
 }
 
 // Clear all favorites
 function clearFavorites() {
     if (favorites.length === 0) {
-        showFormMessage("Your favorites list is already empty.", "error");
+        showDataMessage("Your favorites list is already empty.", "error");
         return;
     }
     
     if (confirm("Are you sure you want to clear all favorites?")) {
         favorites = [];
         
-        // Clear from localStorage
-        localStorage.removeItem('quoteFavorites');
+        // Save to local storage
+        saveToLocalStorage();
         
         // Update favorites display
         displayFavorites();
         
-        showFormMessage("All favorites cleared.", "success");
+        showDataMessage("All favorites cleared.", "success");
     }
 }
 
@@ -515,62 +650,4 @@ function displayFavorites() {
     favoritesList.innerHTML = '';
     
     if (favorites.length === 0) {
-        favoritesList.innerHTML = '<p style="color: #7f8c8d; font-style: italic;">No favorite quotes yet. Add some!</p>';
-        return;
-    }
-    
-    favorites.forEach((quote, index) => {
-        const favoriteItem = document.createElement('div');
-        favoriteItem.style.padding = "15px";
-        favoriteItem.style.marginBottom = "10px";
-        favoriteItem.style.backgroundColor = "#f9f9ff";
-        favoriteItem.style.borderRadius = "8px";
-        favoriteItem.style.borderLeft = "3px solid #ff9f43";
-        
-        favoriteItem.innerHTML = `
-            <p style="font-style: italic;">"${quote.text}"</p>
-            <div style="display: flex; justify-content: space-between; margin-top: 10px;">
-                <span style="color: #7f8c8d;">${quote.author}</span>
-                <span style="background-color: #e1e8ff; color: #2575fc; padding: 3px 10px; border-radius: 15px; font-size: 0.8rem;">${quote.category}</span>
-            </div>
-        `;
-        
-        favoritesList.appendChild(favoriteItem);
-    });
-}
-
-// Save favorites to localStorage
-function saveFavorites() {
-    localStorage.setItem('quoteFavorites', JSON.stringify(favorites));
-}
-
-// Load favorites from localStorage
-function loadFavorites() {
-    const savedFavorites = localStorage.getItem('quoteFavorites');
-    if (savedFavorites) {
-        favorites = JSON.parse(savedFavorites);
-    }
-}
-
-// Set up event listeners
-function setupEventListeners() {
-    // New quote button
-    newQuoteBtn.addEventListener('click', showRandomQuote);
-    
-    // Add quote form button
-    addQuoteFormBtn.addEventListener('click', createAddQuoteForm);
-    
-    // Delete category button
-    deleteCategoryBtn.addEventListener('click', deleteCategoryFunc);
-    
-    // Add to favorites button
-    addToFavoritesBtn.addEventListener('click', addToFavorites);
-    
-    // Clear favorites button
-    clearFavoritesBtn.addEventListener('click', clearFavorites);
-}
-
-window.createAddQuoteForm = createAddQuoteForm;
-window.addQuote = addQuote;
-// Initialize the app when the DOM is fully loaded
-document.addEventListener('DOMContentLoaded', init);
+        favoritesList.innerHTML = '<p style="color: #7f8c8d; font-style: italic;">
