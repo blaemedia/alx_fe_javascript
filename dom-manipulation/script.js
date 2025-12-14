@@ -260,3 +260,56 @@ window.fetchQuotesFromServer = fetchQuotesFromServer;
 window.syncQuotes = syncQuotes;
 
 document.addEventListener('DOMContentLoaded', init);
+let categories = [];
+let selectedCategory = 'all';
+
+
+function populateCategories() {
+const categoryFilter = document.getElementById('categoryFilter');
+if (!categoryFilter) return;
+
+
+// Clear existing options except 'All'
+while (categoryFilter.options.length > 1) {
+categoryFilter.remove(1);
+}
+
+
+// Extract unique categories
+const uniqueCategories = [...new Set(categories)].sort();
+
+
+// Populate dropdown with <option> elements
+uniqueCategories.forEach(cat => {
+const option = document.createElement('option');
+option.value = cat;
+option.textContent = cat;
+categoryFilter.appendChild(option);
+});
+
+
+// Restore selected category
+selectedCategory = localStorage.getItem('lastCategoryFilter') || 'all';
+if ([...categoryFilter.options].some(opt => opt.value === selectedCategory)) {
+categoryFilter.value = selectedCategory;
+} else {
+categoryFilter.value = 'all';
+selectedCategory = 'all';
+}
+
+
+// Apply filtering after populating
+filterQuotes();
+}
+
+
+function filterQuotes() {
+const filteredQuotes = selectedCategory === 'all'
+? quotes
+: quotes.filter(q => q.category === selectedCategory);
+
+
+displayRandomQuote(filteredQuotes);
+localStorage.setItem('lastCategoryFilter', selectedCategory);
+}
+}
