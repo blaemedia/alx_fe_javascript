@@ -176,7 +176,7 @@ function clearAllQuotes() {
     populateCategories();
     updateCategoryDropdowns();
     updateStatistics();
-    showRandomQuote();
+    displayRandomQuote();
     
     showDataMessage("All quotes cleared. Default quotes restored.", "success");
 }
@@ -278,17 +278,20 @@ function filterQuotes() {
     localStorage.setItem('lastCategoryFilter', selectedCategory);
     
     // Show a random quote from the filtered category
-    showRandomQuote();
+    displayRandomQuote();
 }
 
-// Update the showRandomQuote function to respect filtering
-// You'll need to modify the existing showRandomQuote function
-// Here's a version that supports filtering:
-function showRandomQuote() {
+// Update the displayRandomQuote function to respect filtering
+function displayRandomQuote() {
+    const quoteElement = document.getElementById('quoteDisplay') || document.querySelector('.quote-display') || document.getElementById('quoteContainer');
+    
+    if (!quoteElement) {
+        console.error('Quote display element not found');
+        return;
+    }
+    
     if (quotes.length === 0) {
-        quoteText.textContent = "No quotes available. Add some quotes first!";
-        quoteAuthor.textContent = "";
-        quoteCategory.textContent = "";
+        quoteElement.innerHTML = "No quotes available. Add some quotes first!";
         return;
     }
     
@@ -300,9 +303,7 @@ function showRandomQuote() {
     }
     
     if (filteredQuotes.length === 0) {
-        quoteText.textContent = `No quotes found in category "${currentFilter}". Try another category or add quotes to this category.`;
-        quoteAuthor.textContent = "";
-        quoteCategory.textContent = "";
+        quoteElement.innerHTML = `No quotes found in category "${currentFilter}". Try another category or add quotes to this category.`;
         return;
     }
     
@@ -310,10 +311,12 @@ function showRandomQuote() {
     const randomIndex = Math.floor(Math.random() * filteredQuotes.length);
     const randomQuote = filteredQuotes[randomIndex];
     
-    // Update the DOM elements
-    quoteText.textContent = randomQuote.text;
-    quoteAuthor.textContent = randomQuote.author;
-    quoteCategory.textContent = randomQuote.category;
+    // Update the DOM elements using innerHTML
+    quoteElement.innerHTML = `
+        <div class="quote-text">${randomQuote.text}</div>
+        <div class="quote-author">${randomQuote.author}</div>
+        <div class="quote-category">${randomQuote.category}</div>
+    `;
     
     // Update statistics to show filtered count
     updateStatistics();
@@ -436,7 +439,7 @@ function addQuote() {
     }
     
     // Refresh the quote display
-    showRandomQuote();
+    displayRandomQuote();
 }
 
 // ==============================
@@ -446,7 +449,7 @@ function addQuote() {
 // Set up event listeners
 function setupEventListeners() {
     // New quote button
-    newQuoteBtn.addEventListener('click', showRandomQuote);
+    newQuoteBtn.addEventListener('click', displayRandomQuote);
     
     // Add quote form button
     addQuoteFormBtn.addEventListener('click', createAddQuoteForm);
@@ -518,6 +521,7 @@ window.createAddQuoteForm = createAddQuoteForm;
 window.addQuote = addQuote;
 window.filterQuotes = filterQuotes;
 window.populateCategories = populateCategories;
+window.displayRandomQuote = displayRandomQuote;
 
 // Initialize the app when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', init);
