@@ -12,6 +12,75 @@ let syncIntervalId = null;
 // Simulated server quotes (in real app, this would come from API)
 let serverQuotes = [];
 
+// Fetch quotes from server (mock implementation)
+async function fetchQuotesFromServer() {
+    console.log('Fetching quotes from server...');
+    
+    try {
+        // In a real implementation, this would be:
+        // const response = await fetch('https://api.example.com/quotes');
+        // const data = await response.json();
+        // return data;
+        
+        // For simulation, create mock response
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+        
+        // Return mock server data with some sample quotes
+        const mockQuotes = [
+            {
+                text: "The only way to do great work is to love what you do.",
+                author: "Steve Jobs",
+                category: "Motivation"
+            },
+            {
+                text: "Life is what happens to you while you're busy making other plans.",
+                author: "John Lennon",
+                category: "Life"
+            },
+            {
+                text: "The future belongs to those who believe in the beauty of their dreams.",
+                author: "Eleanor Roosevelt",
+                category: "Inspiration"
+            }
+        ];
+        
+        // Add some random quotes for variety
+        const additionalQuotes = [
+            {
+                text: "Be yourself; everyone else is already taken.",
+                author: "Oscar Wilde",
+                category: "Wisdom"
+            },
+            {
+                text: "Two things are infinite: the universe and human stupidity; and I'm not sure about the universe.",
+                author: "Albert Einstein",
+                category: "Humor"
+            }
+        ];
+        
+        // Combine quotes and return
+        const allQuotes = [...mockQuotes, ...additionalQuotes];
+        
+        console.log(`Fetched ${allQuotes.length} quotes from server`);
+        return {
+            success: true,
+            quotes: allQuotes,
+            timestamp: new Date().toISOString(),
+            message: 'Quotes fetched successfully'
+        };
+        
+    } catch (error) {
+        console.error('Error fetching quotes from server:', error);
+        return {
+            success: false,
+            error: error.message,
+            quotes: [],
+            timestamp: new Date().toISOString(),
+            message: 'Failed to fetch quotes'
+        };
+    }
+}
+
 // Initialize server simulation
 function initServerSimulation() {
     console.log('Initializing server simulation...');
@@ -64,9 +133,8 @@ async function simulateServerSync() {
         // Show sync status
         showSyncStatus('Syncing with server...', 'info');
         
-        // In a real app, this would be a fetch() call to the server
-        // For simulation, we'll use a mock server response
-        const serverResponse = await simulateServerRequest();
+        // Fetch quotes from server
+        const serverResponse = await fetchQuotesFromServer();
         
         // Process server response
         await processServerResponse(serverResponse);
@@ -81,20 +149,6 @@ async function simulateServerSync() {
         console.error('Server sync failed:', error);
         showSyncStatus('Sync failed: ' + error.message, 'error');
     }
-}
-
-// Simulate server request
-async function simulateServerRequest() {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Return mock server data
-    return {
-        success: true,
-        timestamp: new Date().toISOString(),
-        quotes: serverQuotes,
-        message: 'Sync successful'
-    };
 }
 
 // Process server response
@@ -856,6 +910,7 @@ window.displayRandomQuote = displayRandomQuote;
 window.manualSync = manualSync;
 window.applyConflictResolution = applyConflictResolution;
 window.showConflictResolver = showConflictResolver;
+window.fetchQuotesFromServer = fetchQuotesFromServer; // Add this line
 
 // Initialize the app when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', init);
