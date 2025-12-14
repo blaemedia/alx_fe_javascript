@@ -185,20 +185,11 @@ function manualSync() {
 // ==============================
 // CATEGORY FILTERING (SAFE)
 // ==============================
+let selectedCategory = 'all';
+
 function populateCategories() {
     const filter = document.getElementById('categoryFilter');
-    if (!filter) return;
-
-    filter.length = 1;
-    [...categories].sort().forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c;
-        opt.textContent = c;
-        filter.appendChild(opt);
-    });
-}
-
-function filterQuotes() {
+    if (!() {
     currentFilter = document.getElementById('categoryFilter')?.value || 'all';
     localStorage.setItem('lastCategoryFilter', currentFilter);
     displayRandomQuote();
@@ -253,6 +244,15 @@ function exportToJsonFile() {
 
     const a = document.createElement('a');
     a.href = url;
+    a.download = 'quotes.json';
+    document.body.appendChild(a);
+    a.click();
+
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+window.exportToJsonFile = exportToJsonFile;
 window.manualSync = manualSync;
 window.applyConflictResolution = window.applyConflictResolution || applyConflictResolution;
 window.showConflictResolver = window.showConflictResolver || showConflictResolver;
