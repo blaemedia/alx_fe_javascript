@@ -239,6 +239,7 @@ window.addQuote = window.addQuote || addQuote;
 window.filterQuotes = filterQuotes;
 window.populateCategories = populateCategories;
 window.displayRandomQuote = displayRandomQuote;
+window.showRandomQuote = displayRandomQuote;
 window.manualSync = manualSync;
 window.applyConflictResolution = window.applyConflictResolution || applyConflictResolution;
 window.showConflictResolver = window.showConflictResolver || showConflictResolver;
