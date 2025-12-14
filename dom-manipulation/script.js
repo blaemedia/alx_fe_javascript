@@ -221,6 +221,10 @@ function loadSampleQuotes() {
     showDataMessage(`Added ${addedCount} sample quotes to your collection!`, "success");
 }
 
+// ==============================
+// EVENT LISTENERS SETUP
+// ==============================
+
 // Set up event listeners
 function setupEventListeners() {
     // New quote button
@@ -251,5 +255,7 @@ function setupEventListeners() {
     loadSampleQuotesBtn.addEventListener('click', loadSampleQuotes);
 }
 
+window.createAddQuoteForm = createAddQuoteForm;
+window.addQuote = addQuote;
 // Initialize the app when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', init);
