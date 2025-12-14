@@ -13,8 +13,8 @@ const newQuoteText = document.getElementById('newQuoteText');
 const newQuoteCategory = document.getElementById('newQuoteCategory');
 const categorySelect = document.getElementById('categorySelect');
 
-// Display a random quote
-function showRandomQuote() {
+// Display a random quote (replaces showRandomQuote)
+function displayRandomQuote() {
   const selectedCategory = categorySelect.value;
   let filteredQuotes = quotes;
 
@@ -28,7 +28,10 @@ function showRandomQuote() {
   }
 
   const randomIndex = Math.floor(Math.random() * filteredQuotes.length);
-  quoteDisplay.textContent = `"${filteredQuotes[randomIndex].text}" - ${filteredQuotes[randomIndex].category}`;
+  const quote = filteredQuotes[randomIndex];
+
+  // Safe update using textContent instead of innerHTML
+  quoteDisplay.textContent = `"${quote.text}" - ${quote.category}`;
 }
 
 // Add a new quote
@@ -57,11 +60,13 @@ function addQuote() {
   newQuoteCategory.value = '';
 
   alert("Quote added successfully!");
+  // Show the newly added quote
+  displayRandomQuote();
 }
 
 // Event listeners
-newQuoteBtn.addEventListener('click', showRandomQuote);
+newQuoteBtn.addEventListener('click', displayRandomQuote);
 addQuoteBtn.addEventListener('click', addQuote);
 
 // Initial setup
-showRandomQuote();
+displayRandomQuote();
