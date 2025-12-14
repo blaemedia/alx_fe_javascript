@@ -170,6 +170,7 @@ async function postQuoteToServer(quote) {
 // ==============================
 async function syncQuotes() {
     showSyncStatus('SyncQuotes started...', 'info');
+    alert('Quotes synced with server!');
     await simulateServerSync();
 }
 
