@@ -167,7 +167,20 @@ async function postQuoteToServer(quote) {
 // ==============================
 // ==============================
 // SYNC QUOTES (REQUIRED BY CHECKER)
-// ====
+// ==============================
+async function syncQuotes() {
+    showSyncStatus('SyncQuotes started...', 'info');
+    await simulateServerSync();
+}
+
+// ==============================
+// MANUAL SYNC
+// ==============================
+function manualSync() {
+    showSyncStatus('Manual sync started...', 'info');
+    syncQuotes();
+}
+
 // ==============================
 // CATEGORY FILTERING (SAFE)
 // ==============================
@@ -229,5 +242,6 @@ window.manualSync = manualSync;
 window.applyConflictResolution = window.applyConflictResolution || applyConflictResolution;
 window.showConflictResolver = window.showConflictResolver || showConflictResolver;
 window.fetchQuotesFromServer = fetchQuotesFromServer;
+window.syncQuotes = syncQuotes;
 
 document.addEventListener('DOMContentLoaded', init);
